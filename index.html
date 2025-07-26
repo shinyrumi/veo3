@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ko" class="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>원샷 AI 영상 프롬프트 엔진</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans KR', 'Inter', sans-serif; }
+        #loader { border-color: #f3f3f3; border-top-color: #4f46e5; }
+        .spinner-text { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+
+    <div class="container mx-auto max-w-3xl p-4 sm:p-6 md:p-8">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">원샷 AI 영상 프롬프트 엔진</h1>
+            <p class="mt-2 text-lg text-gray-600 dark:text-gray-400">아이디어를 입력하고, 완성된 프롬프트를 즉시 받으세요.</p>
+        </header>
+
+        <!-- Main Input Section -->
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-2xl space-y-6">
+            <div>
+                <label for="apiKeyInput" class="block text-xl font-semibold mb-2 text-gray-900 dark:text-white">API 키</label>
+                 <div class="relative">
+                    <input type="password" id="apiKeyInput" class="w-full p-4 pr-12 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="Google AI API 키를 여기에 붙여넣으세요">
+                    <button id="toggleApiKey" type="button" class="absolute inset-y-0 right-0 px-4 text-gray-600 dark:text-gray-400">
+                        <svg id="eye-open" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                        <svg id="eye-closed" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                    </button>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">API 키는 <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-indigo-500 hover:underline">Google AI Studio</a>에서 발급받을 수 있습니다.</p>
+            </div>
+             <div>
+                <label for="ideaInput" class="block text-xl font-semibold mb-2 text-gray-900 dark:text-white">당신의 아이디어는?</label>
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <input type="text" id="ideaInput" class="flex-grow p-4 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" placeholder="예: 비 오는 밤, 골목길의 고양이">
+                    <button id="generateBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300 flex items-center justify-center whitespace-nowrap text-lg">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        생성 & 복사
+                    </button>
+                </div>
+            </div>
+             <div id="loader-container" class="hidden text-center mt-6">
+                <div id="loader" class="animate-spin rounded-full h-10 w-10 border-4 mx-auto"></div>
+                <p class="spinner-text text-indigo-400 mt-3 font-semibold">AI 감독이 최고의 장면을 구상하고 있습니다...</p>
+            </div>
+        </div>
+
+        <!-- Result Section -->
+        <div id="resultContainer" class="mt-8 hidden">
+            <div class="bg-green-100 dark:bg-green-900 border-l-4 border-green-500 text-green-800 dark:text-green-200 p-4 rounded-lg mb-6 fade-in" role="alert">
+                <p class="font-bold">성공!</p>
+                <p>프롬프트가 생성되어 클립보드에 복사되었습니다. AI 영상 모델에 바로 붙여넣으세요.</p>
+            </div>
+            
+            <div class="relative bg-gray-800 dark:bg-black p-6 rounded-lg shadow-inner fade-in">
+                 <h3 class="text-lg font-semibold text-white mb-3">생성된 프롬프트:</h3>
+                <pre id="result" class="text-white text-sm whitespace-pre-wrap break-words font-mono"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const generateBtn = document.getElementById('generateBtn');
+        const ideaInput = document.getElementById('ideaInput');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const toggleApiKeyBtn = document.getElementById('toggleApiKey');
+        const loader = document.getElementById('loader-container');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultPre = document.getElementById('result');
+
+        async function generatePrompt() {
+            const userIdea = ideaInput.value.trim();
+            const apiKey = apiKeyInput.value.trim();
+
+            if (!apiKey) {
+                alert('Google AI API 키를 입력해주세요!');
+                apiKeyInput.focus();
+                return;
+            }
+             if (!userIdea) {
+                alert('아이디어를 입력해주세요!');
+                ideaInput.focus();
+                return;
+            }
+
+            loader.classList.remove('hidden');
+            resultContainer.classList.add('hidden');
+            generateBtn.disabled = true;
+            generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            const systemPrompt = `You are a world-class cinematic director and an expert prompt engineer for an AI video generator. Your task is to take a user's simple idea and expand it into a complete, highly-detailed, and structured JSON prompt. The generated scene should be short (3-5 seconds), visually stunning, and emotionally resonant. The JSON output MUST strictly follow this comprehensive schema:
+- **description**: A vivid, 3-4 sentence summary of the entire scene, setting the tone and narrative.
+- **style**: A comma-separated string of at least 5-7 stylistic keywords (e.g., cinematic, 8k, hyperrealistic, moody, atmospheric, blade runner style).
+- **camera**: A detailed description of the camera work, including specific shots, angles, and movement from start to finish (e.g., wide establishing shot -> slow dolly in -> extreme close-up on subject's eye, rack focus).
+- **lighting**: A rich description of the lighting, including source, color, mood, and effect (e.g., dramatic golden hour sidelight, harsh neon glow from signs, soft volumetric light rays through fog).
+- **elements**: A comma-separated list of all key visual components in the scene. Be specific.
+- **motion**: Detailed description of movement for both objects and the camera. Specify speeds and textures of motion (e.g., rain falls heavily, character moves cautiously, camera push-in is slow and deliberate).
+- **ending**: A single sentence describing the final, impactful frame of the video.
+- **audio**: A comma-separated list of key sound effects (sfx) and ambient sounds that would accompany the scene.
+- **keywords**: A comma-separated list of 8-10 core, searchable keywords that summarize the entire prompt.`;
+            
+            let chatHistory = [];
+            chatHistory.push({ role: "user", parts: [{ text: `System instruction: ${systemPrompt}\n\nUser idea: "${userIdea}"` }] });
+            
+            const payload = {
+                contents: chatHistory,
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            "description": { "type": "STRING" }, "style": { "type": "STRING" }, "camera": { "type": "STRING" }, "lighting": { "type": "STRING" }, "elements": { "type": "STRING" }, "motion": { "type": "STRING" }, "ending": { "type": "STRING" }, "audio": { "type": "STRING" }, "keywords": { "type": "STRING" }
+                        },
+                        required: ["description", "style", "camera", "lighting", "elements", "motion", "ending", "audio", "keywords"]
+                    }
+                }
+            };
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorBody = await response.json();
+                    throw new Error(`API 요청 실패 (코드: ${response.status}): ${errorBody.error.message}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts.length > 0) {
+                    const generatedText = result.candidates[0].content.parts[0].text;
+                    const parsedJson = JSON.parse(generatedText);
+                    const finalObject = {};
+                    for (const key in parsedJson) {
+                        if (['style', 'elements', 'audio', 'keywords'].includes(key)) {
+                            finalObject[key] = parsedJson[key].split(',').map(item => item.trim()).filter(Boolean);
+                        } else {
+                            finalObject[key] = parsedJson[key];
+                        }
+                    }
+                    const jsonString = JSON.stringify(finalObject, null, 2);
+                    displayAndCopy(jsonString);
+                } else {
+                    throw new Error("AI로부터 유효한 응답을 받지 못했습니다.");
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`오류가 발생했습니다: \n${error.message}`);
+            } finally {
+                loader.classList.add('hidden');
+                generateBtn.disabled = false;
+                generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+        
+        function displayAndCopy(jsonString) {
+            resultPre.textContent = jsonString;
+            navigator.clipboard.writeText(jsonString).then(() => {
+                resultContainer.classList.remove('hidden');
+                resultContainer.scrollIntoView({ behavior: 'smooth' });
+            }).catch(err => {
+                console.error('클립보드 복사 실패:', err);
+                alert('클립보드 복사에 실패했습니다. 수동으로 복사해주세요.');
+                resultContainer.classList.remove('hidden');
+                resultContainer.scrollIntoView({ behavior: 'smooth' });
+            });
+        }
+
+        generateBtn.addEventListener('click', generatePrompt);
+        ideaInput.addEventListener('keypress', (e) => e.key === 'Enter' && generatePrompt());
+        apiKeyInput.addEventListener('keypress', (e) => e.key === 'Enter' && generatePrompt());
+        
+        toggleApiKeyBtn.addEventListener('click', () => {
+            const eyeOpen = document.getElementById('eye-open');
+            const eyeClosed = document.getElementById('eye-closed');
+            if (apiKeyInput.type === 'password') {
+                apiKeyInput.type = 'text';
+                eyeOpen.classList.add('hidden');
+                eyeClosed.classList.remove('hidden');
+            } else {
+                apiKeyInput.type = 'password';
+                eyeOpen.classList.remove('hidden');
+                eyeClosed.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
